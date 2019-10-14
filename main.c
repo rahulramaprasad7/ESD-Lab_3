@@ -11,32 +11,72 @@ struct buff
 {
    uint16_t size;
    uint16_t *characters;
-   uint16_t *storageCharacters;
+   uint16_t totalCharacters;
    uint16_t freeCharacters;
    struct buff* next;
 };
 
 void append(struct buff** head_ref, uint16_t size)
 {
-	/* 1. allocate node */
+	/*  allocate node */
 	struct buff* new_node = (struct buff*) malloc(sizeof(struct buff));
     new_node->characters = (uint16_t*)malloc(size * sizeof(uint16_t));
 	struct buff *last = *head_ref; /* used in step 5*/
 
-	/* 3. This new node is going to be the last node, so make next
+	/*  This new node is going to be the last node, so make next
 		of it as NULL*/
 	new_node->next = NULL;
 
-	/* 5. Else traverse till the last node */
+	/*  Else traverse till the last node */
 	while (last->next != NULL)
 		last = last->next;
 
-	/* 6. Change the next of last node */
+	/*  Change the next of last node */
 	last->next = new_node;
+	printf_tiny("Address of appended buffer\n\r");
 	printf("%p %p", new_node, new_node->characters);
 	printf_tiny("\n\r");
 }
 
+void deleteNode(struct buff **head_ref, int position)
+{
+   // If linked list is empty
+   if (*head_ref == NULL)
+      return;
+
+   // Store head node
+   struct buff* temp = *head_ref;
+
+    // If head needs to be removed
+    if (position == 0)
+    {
+        *head_ref = temp->next;   // Change head
+        free(temp);               // free old head
+        *head_ref = NULL;
+        return;
+    }
+
+    // Find previous node of the node to be deleted
+    for (int i=0; temp!=NULL && i<position-1; i++)
+         temp = temp->next;
+
+    // If position is more than number of ndoes
+    if (temp == NULL || temp->next == NULL)
+         return;
+
+    // Node temp->next is the node to be deleted
+    // Store pointer to the next of node to be deleted
+    struct buff *next = temp->next->next;
+
+    // Unlink the node from linked list
+    free(temp->next);  // Free memory
+    temp->next = next;  // Unlink the deleted node from list
+    printf_tiny("Address after deletion buffer\n\r");
+    printf("%p %p", temp, temp->characters);
+	printf_tiny("\n\r");
+	printf("%p %p", temp->next, temp->next->characters);
+	printf_tiny("\n\r");
+}
 void main()
 {
     AUXR |= (!XRS2) | XRS1 | XRS0;
@@ -55,14 +95,17 @@ void main()
     buffer_0->next = buffer_1;
     buffer_1->next = NULL;
 
+    printf_tiny("Address of first buffer\n\r");
     printf("%p %p", buffer_0, buffer_0->characters);
     printf_tiny("\n\r");
+    printf_tiny("Address of second buffer\n\r");
     printf("%p %p", buffer_1, buffer_1->characters);
     printf_tiny("\n\r");
     //printf_tiny("%d\n\r",sizeof(struct buff));
 
     append(&buffer_0, size);
     append(&buffer_0, size);
+    deleteNode(&buffer_0, 2);
 /*    struct buff* buffer_2 = NULL;
     buffer_1->next = buffer_2;
     buffer_2->next = NULL;
