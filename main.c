@@ -4,19 +4,19 @@
 #include <stdlib.h>
 #include <stdint.h>
 #define HEAP_SIZE 4000
-__xdata char __sdcc_heap[HEAP_SIZE];
-const unsigned int __sdcc_heap_size = HEAP_SIZE;
+__xdata char __sdcc_heap[HEAP_SIZE];         
+const unsigned int __sdcc_heap_size = HEAP_SIZE;   //Set the Heap size to 4000 bytes
 
 uint16_t lastCount = 0;
 
 struct buff
 {
-   uint16_t size;
-   uint16_t bufferNo;
-   char *characters;
-   uint16_t characterCount;
-   uint16_t freeCharacters;
-   struct buff* next;
+   uint16_t size;             //Stores the buffer size
+   uint16_t bufferNo;		  //Stores the buffer number
+   char *characters;		  //Stores the buffer
+   uint16_t characterCount;   //Stores total character count
+   uint16_t freeCharacters;   //Stores the number of free spaces in the buffer
+   struct buff* next;         //Points to the next buffer
 };
 
 struct buff* buffer_0 = NULL;
@@ -193,123 +193,123 @@ void reallocate()
     char x[10];
     while(1)
     {
-        buffer_0 = malloc(sizeof(struct buff));
-        printf_tiny("Enter a buffer size\n\r");
-        gets(x);
-        buffer_0->size = atoi(x);
-        if (!(buffer_0->size >= 32 && buffer_0->size <=3200 && (buffer_0->size % 16 == 0)))
+        buffer_0 = malloc(sizeof(struct buff));          //Allocate memory for meta-data for buffer_0
+        printf_tiny("Enter a buffer size\n\r");          
+        gets(x);										 //Input the size of buffer
+        buffer_0->size = atoi(x);						 //Convert string to int
+        if (!(buffer_0->size >= 32 && buffer_0->size <=3200 && (buffer_0->size % 16 == 0)))      //Check for buffer size conditions imposed by the question
         {
             do
             {
                 printf_tiny("Enter a valid buffer size which lies b/w 32 and 3200 and is divisible by 16\n\r");
                 gets(x);
                 buffer_0->size = atoi(x);
-            }while (!(buffer_0->size >= 32 && buffer_0->size <=3200 && (buffer_0->size % 16 == 0)));
+            }while (!(buffer_0->size >= 32 && buffer_0->size <=3200 && (buffer_0->size % 16 == 0)));    //Keep checking until the right input is given
         }
 
-        buffer_0->characters = malloc(buffer_0->size * sizeof(char));
+        buffer_0->characters = malloc(buffer_0->size * sizeof(char));     //Allocate buffer_0 once the input size is acceptable
 
-        buffer_1 = malloc(sizeof(struct buff));
-        buffer_1->size = buffer_0->size;
-        buffer_1->characters = malloc(buffer_0->size * sizeof(char));
-        if (buffer_1->characters == NULL || buffer_0->characters == NULL)
+        buffer_1 = malloc(sizeof(struct buff));							  //Allocate buffer_1 meta-data
+        buffer_1->size = buffer_0->size;								  //Assign same size for buffer_1 as buffer_0
+        buffer_1->characters = malloc(buffer_0->size * sizeof(char));      //Allocate memory for buffer_1
+        if (buffer_1->characters == NULL || buffer_0->characters == NULL)   //Check if any of the buffers are not allocated
         {
-            free(buffer_1->characters);
-            free(buffer_1);
-            buffer_1->characters = NULL;
+            free(buffer_1->characters);										//Free the buffer_1
+            free(buffer_1);													//Free Buffer_1 meta-data
+            buffer_1->characters = NULL;									//Set the buffer pointer to NULL 
             &buffer_1 == NULL;
-            free(buffer_0->characters);
-            free(buffer_0);
-            buffer_0->characters = NULL;
+            free(buffer_0->characters);										//Free the buffer_0
+			free(buffer_0);                                                 //Free buffer_0 meta-data
+            buffer_0->characters = NULL;                                    //Set the buffer pointer to NULL
             &buffer_0 == NULL;
             printf_tiny("Buffer allocation failed, not enough space on the heap\n\r");
-            continue;
+            continue;														//Continue allocating until it meets the requirements of heap size
         }
-        break;
+        break;																//Break out of the loop if buffer_0 and buffer_1 are successfully allocated
     }
-    buffer_0->next = buffer_1;
-    buffer_1->next = NULL;
-    buffer_0->bufferNo = 0;
-    buffer_1->bufferNo = 1;
+    buffer_0->next = buffer_1;												//Point buffer_0 to next node buffer_1
+    buffer_1->next = NULL;													//Point the next node of buffer_1 to NULL for time being
+    buffer_0->bufferNo = 0;													//Assign buffer number
+    buffer_1->bufferNo = 1;													//Assign buffer number
 }
 
 _sdcc_external_startup()
 {
-    AUXR &= (!XRS2);
-    AUXR |= XRS1 | XRS0;
+    AUXR &= (!XRS2);				//Clear the XRS2 bit
+    AUXR |= XRS1 | XRS0;            //Set XRS1 and XRS0 bit to allocate 1024 bytes for XRAM
     return 0;
 }
 
 void main()
 {
     uint16_t ch, i = 0, j = 0;
-    reallocate();
-    if (buffer_1->characters == NULL)
+    reallocate();								//Allocate buffer_0 and buffer_1 successfully
+    if (buffer_1->characters == NULL)			
     {
         reallocate();
     }
 
-    buffer_0->characterCount = 0;
-    printf_tiny("Enter the characters\n\r");
+    buffer_0->characterCount = 0;				//Initialise character count of buffer_0
+    printf_tiny("Enter the characters\n\r");    //Start inputting characters serially
     do
     {
-        ch = getchar();
-        (buffer_0->characterCount)++;
-        buffer_0->freeCharacters = buffer_0->size - buffer_0->characterCount;
-        if (ch >= 97 && ch <= 122)
+        ch = getchar();                         								//Store each character
+        (buffer_0->characterCount)++;           							    //Incremenet character count after each input 
+        buffer_0->freeCharacters = buffer_0->size - buffer_0->characterCount;   //Calculate free space
+        if (ch >= 97 && ch <= 122)												//Store the lowercase characters in buffer_0
         {
-            if (i >= buffer_0->size)
+            if (i >= buffer_0->size)											//If buffer_0 limit is reached exho the characters
             {
                 putchar(ch);
             }
-            else
+            else																//If buffer limit is not reached store the lower characters
             {
                 buffer_0->characters[i] = ch;
                 putchar(ch);
                 i++;
             }
         }
-        else if (ch == '+')
+        else if (ch == '+')														//Execute functions to add additional buffer
         {
             putchar(ch);
             append(&buffer_0);
             continue;
         }
-        else if (ch == '-')
+        else if (ch == '-')														//Execute functions to delete buffers
         {
             putchar(ch);
             deleteNode(&buffer_0);
             continue;
         }
-        else if (ch == '?')
+        else if (ch == '?')														//Display the current bufefr details and empty out buffer_0
         {
             putchar(ch);
             questionMark();
-            i = 0;
+            i = 0;															    //To start writing into buffer_0 again
             continue;
         }
-        else if (ch == '@')
+        else if (ch == '@')														//Execute functions to delete all bufefrs and start the program again
         {
             putchar(ch);
             printf_tiny("\n\r");
             deleteAll(&buffer_0);
-            reallocate();
+            reallocate();										                //Start executing program again 
             printf_tiny("Enter the characters\n\r");
             continue;
         }
-        else if (ch == '=')
+        else if (ch == '=')                                                     //Print the buffer_0 contents in the specified format
         {
             putchar(ch);
             printBuffer0(&buffer_0);
             continue;
         }
-        else
+        else																	//Echo other characters
         {
             putchar(ch);
             continue;
         }
 
-    }while (ch != '\r');
+    }while (ch != '\r');                                                        //Continue reading serial inputs until "Enter" key is pressed
     return;
 }
 int putchar (int c)
