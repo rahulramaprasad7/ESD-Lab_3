@@ -7,6 +7,8 @@
 __xdata char __sdcc_heap[HEAP_SIZE];
 const unsigned int __sdcc_heap_size = HEAP_SIZE;
 
+uint16_t lastCount = 0;
+
 struct buff
 {
    uint16_t size;
@@ -27,42 +29,52 @@ void printBuffers (struct buff** head_ref)
     int k = 0, j = 0;
     while(temp!= NULL)
     {
-        printf_tiny("****Information regarding buffer_%d****\n\r", k);
-        printf("Starting address of buffer_%d = %p\n\r", k, &temp->characters[0]);
+        printf_tiny("\n\r****Information regarding buffer_%d****\n\r", k);
+        printf("\n\rStarting address of buffer_%d = %p\n\r", k, &temp->characters[0]);
         printf("Ending address of buffer_%d = %p\n\r", k, &(temp->characters[temp->size]));
-        printf_tiny("The size of this buffer = %d", temp->size);
+        printf_tiny("The size of this buffer = %d\n\r", temp->size);
         if( k == 0)
         {
             printf_tiny("Number of total characters = %d\n\r", temp->characterCount);
             printf_tiny("Number of free characters = %d\n\r", temp->freeCharacters);
         }
-//        if( k == 0)
-//        {
-//            printf_tiny("The contents of the buffer_%d are\n\r", k);
-//            do
-//            {
-//                putchar(temp->characters[j]);
-//                printf(" %p\n\r",&temp->characters[j++]);
-//            }while (temp->characters[j] != '\0');
-//        }
         k++;
         temp = temp->next;
     }
 
 }
 
+void questionMark()
+{
+    uint16_t i, j = 0;
+    printBuffers(&buffer_0);
+    printf_tiny("Number of total characters since last ? = %d\n\r", ((buffer_0->characterCount) - lastCount));
+    printf_tiny("Contents of Buffer_0 are \n\r");
+    for (i = 0; i < buffer_0->characterCount; i += 64)
+    {
+        for (j = i; j < (i+64) && j < buffer_0->characterCount; j++)
+        {
+            printf_tiny("%c ", buffer_0->characters[j]);
+            buffer_0->characters[j] = 0;
+        }
+        printf_tiny("\n\r");
+    }
+    lastCount = buffer_0->characterCount;
+}
+
 void printBuffer0(struct buff** head_ref)
 {
-    uint8_t i, j = 0;
+    uint16_t i, j = 0;
     struct buff* buff_0 = *head_ref;
     printf_tiny("\n\r");
     for (i = 0; i< buff_0->size; i += 16)
     {
         printf("%p: ",&buff_0->characters[i]);
         for (j = i; j < (i + 16) ;j++)
-            printf("%X ", buff_0->characters[j]);
+            printf("%2X ", buff_0->characters[j]);
         printf_tiny("\n\r");
     }
+    return;
 }
 void append(struct buff** head_ref)
 {
@@ -72,7 +84,7 @@ void append(struct buff** head_ref)
 	while (1)
     {
         new_node = malloc(sizeof(struct buff));
-        printf_tiny("Enter a buffer size between 30 and 300 to add\n\r");
+        printf_tiny("\n\rEnter a buffer size between 30 and 300 to add\n\r");
         gets(x);
         new_node->size = atoi(x);
         if (!(new_node->size >= 30 && new_node->size <=300))
@@ -117,62 +129,63 @@ void append(struct buff** head_ref)
     }
 
 	last->next = new_node;
-	new_node->bufferNo = i;
-//	printf_tiny("Address of appended buffer\n\r");
-//	printf("%p %p", new_node, new_node->characters);
-//	printf_tiny("\n\r");
+	new_node->bufferNo = i + 1;
+	printf_tiny("Successfully allocated buffer_%d\n\r", new_node->bufferNo);
 }
 
 void deleteNode(struct buff **head_ref)
 {
-   char x[10];
-   printf_tiny("Enter the buffer number to be deleted\n\r");
-        gets(x);
+    char x[10];
+    uint16_t i = 0;;
+    printf_tiny("Enter the buffer number to be deleted\n\r");
+    gets(x);
     uint16_t position = atoi(x);
-    // If linked list is empty
-   if (*head_ref == NULL)
-      return;
 
-   // Store head node
-   struct buff* temp = *head_ref;
+    if (*head_ref == NULL)
+        return;
 
-    // If head needs to be removed
+    struct buff* temp = *head_ref;
+
     if (position == 0)
     {
-        free(temp->characters);
-        free(temp);
-        //temp = NULL;
-        //temp->characters = NULL;
-        printf("Yo\n\r");
-        printf_tiny("Address after deletion buffer\n\r");
-        printf("%p %p\n\r", temp, temp->characters);
-        *head_ref = NULL;   // Change head
+        printf_tiny("Buffer_0 cannot be deleted using this command, please type the next character\n\r");
         return;
     }
+    for (i = 1; temp != NULL && i < position; i++)
+        temp = temp->next;
 
-    // Find previous node of the node to be deleted
-    for (int i=0; temp!=NULL && i<position-1; i++)
-         temp = temp->next;
-
-    // If position is more than number of ndoes
     if (temp == NULL || temp->next == NULL)
-         return;
+        return;
 
-    // Node temp->next is the node to be deleted
-    // Store pointer to the next of node to be deleted
     struct buff *next = temp->next->next;
 
-    // Unlink the node from linked list
     free(temp->next->characters);
-    free(temp->next);  // Free memory
+    free(temp->next);
+
+    printf_tiny("\n\r Successfully deleted buffer_%d\n\r", temp->next->bufferNo);
+
     temp->next->characters = NULL;
     temp->next = NULL;
-    temp->next = next;  // Unlink the deleted node from list
-    printf_tiny("Address after deletion buffer\n\r");
-    printf("%p %p", temp, temp->characters);
-    printf_tiny("\n\r");
-    //printf("%p %p", temp->next, temp->next->characters);
-    //printf_tiny("\n\r");
+
+    temp->next = next;
+    temp->next->bufferNo = next->bufferNo;
+}
+
+void deleteAll(struct buff **head_ref)
+{
+    struct buff* current = *head_ref;
+    struct buff* next;
+    while (current != NULL)
+    {
+        next = current->next;
+        free(current->characters);
+        free(current);
+        current->characters = NULL;
+        current = NULL;
+        current = next;
+    }
+    *head_ref = NULL;
+    printf("\n\r Deleted all buffers, starting the program again\n\r");
 }
 
 void reallocate()
@@ -184,7 +197,6 @@ void reallocate()
         printf_tiny("Enter a buffer size\n\r");
         gets(x);
         buffer_0->size = atoi(x);
-        buffer_1->size = buffer_0->size;
         if (!(buffer_0->size >= 32 && buffer_0->size <=3200 && (buffer_0->size % 16 == 0)))
         {
             do
@@ -198,6 +210,7 @@ void reallocate()
         buffer_0->characters = malloc(buffer_0->size * sizeof(char));
 
         buffer_1 = malloc(sizeof(struct buff));
+        buffer_1->size = buffer_0->size;
         buffer_1->characters = malloc(buffer_0->size * sizeof(char));
         if (buffer_1->characters == NULL || buffer_0->characters == NULL)
         {
@@ -240,12 +253,9 @@ void main()
     printf_tiny("Enter the characters\n\r");
     do
     {
-        if( i == buffer_0->size)
-        {
-            break;
-        }
         ch = getchar();
-        buffer_0->characterCount++;
+        (buffer_0->characterCount)++;
+        buffer_0->freeCharacters = buffer_0->size - buffer_0->characterCount;
         if (ch >= 97 && ch <= 122)
         {
             if (i >= buffer_0->size)
@@ -256,8 +266,8 @@ void main()
             {
                 buffer_0->characters[i] = ch;
                 putchar(ch);
+                i++;
             }
-            i++;
         }
         else if (ch == '+')
         {
@@ -274,11 +284,17 @@ void main()
         else if (ch == '?')
         {
             putchar(ch);
+            questionMark();
+            i = 0;
             continue;
         }
         else if (ch == '@')
         {
             putchar(ch);
+            printf_tiny("\n\r");
+            deleteAll(&buffer_0);
+            reallocate();
+            printf_tiny("Enter the characters\n\r");
             continue;
         }
         else if (ch == '=')
@@ -294,15 +310,6 @@ void main()
         }
 
     }while (ch != '\r');
-
-    buffer_0->freeCharacters = buffer_0->characterCount - i;
-    buffer_0->characters[i] = '\0';
-//    do
-//    {
-//        putchar(buffer_0->characters[j]);
-//        printf("%p\n\r",&buffer_0->characters[j++]);
-//    }while (buffer_0->characters[j] != '\0');
-//    printf_tiny("Total=%d Free=%d\n\r", buffer_0->characterCount, buffer_0->freeCharacters);
     return;
 }
 int putchar (int c)
@@ -318,16 +325,6 @@ int getchar ()
     while ((SCON & 0x01) == 0);  // wait for character to be received, spin on RI
 	RI = 0;			// clear RI flag
 	return SBUF;  	// return character from SBUF
-}
-int putstr (char *s)
-{
-	int i = 0;
-	while (*s){			// output characters until NULL found
-		putchar(*s++);
-		i++;
-	}
-	//putchar('\n');
-	return i+1;
 }
 
 /*int* mgets()
